@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Crypto Collector 💰</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: radial-gradient(circle at top, #111, #000);
+      color: #fff;
+      font-family: 'Segoe UI', sans-serif;
+      text-align: center;
+    }
+    #player {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(45deg, gold, orange);
+      border-radius: 50%;
+      transform: translateX(-50%);
+      box-shadow: 0 0 20px gold;
+    }
+    .coin {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(45deg, #ffbf00, #ffd700);
+      border-radius: 50%;
+      box-shadow: 0 0 10px gold;
+    }
+    #score {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      font-size: 22px;
+      font-weight: bold;
+    }
+    #username {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      font-size: 20px;
+      color: #aaa;
+    }
+  </style>
+</head>
+<body>
+  <div id="player"></div>
+  <div id="score">💰 Skor: 0</div>
+  <div id="username"></div>
+
+  <!-- Farcaster SDK -->
+  <script src="https://miniapp.farcaster.xyz/sdk.js"></script>
+
+  <script>
+    const player = document.getElementById("player");
+    const scoreDisplay = document.getElementById("score");
+    const usernameDisplay = document.getElementById("username");
+
+    let score = 0;
+
+    // Farcaster SDK entegrasyonu
+    const { user, wallet, social, notifications } = window.FarcasterMiniApp;
+
+    async function init() {
+      const currentUser = await user.getProfile();
+      usernameDisplay.textContent = "👋 " + currentUser.username;
+      notifications.send("Kripto Toplama'ya hoş geldin, " + currentUser.username + "!");
+    }
+
+    init();
+
+    // Oyuncu kontrolü
+    document.addEventListener("mousemove", (e) => {
+      player.style.left = e.clientX + "px";
+    });
+
+    // Coin üretme fonksiyonu
+    function spawnCoin() {
+      const coin = document.createElement("div");
+      coin.classList.add("coin");
+      coin.style.left = Math.random() * (window.innerWidth - 40) + "px";
+      document.body.appendChild(coin);
+      let top = 0;
+
+      const fall = setInterval(() => {
+        top += 5;
+        coin.style.top = top + "px";
+
+        const playerRect = player.getBoundingClientRect();
+        const coinRect = coin.getBoundingClientRect();
+
+        // Çarpışma kontrolü
+        if (
+          coinRect.bottom >= playerRect.top &&
+          coinRect.left < playerRect.right &&
+          coinRect.right > playerRect.left
+        ) {
+          score++;
+          scoreDisplay.textContent = "💰 Skor: " + score;
+          coin.remove();
+          clearInterval(fall);
+
+          // Her 10 coin’de bir paylaşım öner
+          if (score % 10 === 0) {
+            social.share(`Farcaster'da ${score} coin topladım! Sen geçebilecek misin? 💰`);
+          }
+
+          // 50 puanda ödül kazan
+          if (score === 50) {
+            wallet.sendTransaction({
+              to: "0xYourRewardWalletAddressHere", // kendi cüzdan adresini yaz
+              value: "0.001", // ETH miktarı (örnek)
+            });
+            notifications.send("Tebrikler! 🎉 50 coin topladın ve ödül kazandın!");
+          }
+        }
+
+        // Coin ekran dışına çıktıysa sil
+        if (top > window.innerHeight) {
+          coin.remove();
+          clearInterval(fall);
+        }
+      }, 25);
+    }
+
+    // Sürekli coin üret
+    setInterval(spawnCoin, 800);
+  </script>
+</body>
+</html>
